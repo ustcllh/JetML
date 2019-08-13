@@ -45,6 +45,28 @@ class LundCoordinates:
         return np.array([self.lnz, self.lnDelta, self.psi,
                          self.lnm, self.lnKt][:LundCoordinates.dimension])
 
+#======================================================================
+class Angularity:
+    def __init__(self, pseudojet, R=0.4):
+        self.ptd = -9999
+        self.mass = -9999
+        self.width = -9999
+        jet_pt = pseudojet.pt()
+        jet_eta = pseudojet.eta()
+        jet_phi = pseudojet.phi()
+        if pseudojet.has_constituents():
+            self.ptd = 0
+            self.mass = 0
+            self.width = 0
+            for particle in pseudojet.constituents():
+                dr = math.sqrt(math.pow(particle.eta()-jet_eta, 2) + math.pow(particle.phi()-jet_phi, 2))
+                self.ptd += math.pow(particle.pt()/jet_pt, 2)
+                self.width += particle.pt()/jet_pt * dr/R
+                self.mass += particle.pt()/jet_pt * math.pow(dr/R, 2)
+
+    def values(self):
+        return [self.ptd, self.mass, self.width]
+
 
 #======================================================================
 class JetTree:
@@ -57,6 +79,7 @@ class JetTree:
         self.softer = None
         self.delta2 = 0.0
         self.lundCoord = None
+        self.angularity = None
         # first define the current node
         self.node = np.array([pseudojet.px(),pseudojet.py(),pseudojet.pz(),pseudojet.E()])
         # if it has a direct child (i.e. one level further up in the
@@ -73,6 +96,7 @@ class JetTree:
             self.softer = JetTree(j2, self)
             self.delta2 = j1.squared_distance(j2)
             self.lundCoord = LundCoordinates(j1, j2)
+        self.angularity = Angularity(pseudojet)
 
     #-------------------------------------------------------------------------------
     def remove_soft(self):
@@ -131,6 +155,24 @@ class JetTree:
             del self.harder
         del self.node
         del self
+
+    #----------------------------------------------------------------------
+    def binary_tree(self, append=[]):
+        if not self:
+            return []
+        tree_array = []
+        self.binary_tree_iter(tree_array, 0, 1, append=append)
+        return tree_array
+
+
+    def binary_tree_iter(self, array, idx, p, append=[]):
+        cd = self.lundCoord
+        if cd:
+            array.append([[idx, p], [cd.lnm, cd.lnKt, cd.lnz, cd.lnDelta, cd.lnKappa, cd.psi]+append])
+            if self.harder:
+                self.harder.binary_tree_iter(array, 2*idx+1, p, append=append)
+            if self.softer:
+                self.softer.binary_tree_iter(array, 2*idx+2, 0, append=append)
 
 #======================================================================
 class LundImage:

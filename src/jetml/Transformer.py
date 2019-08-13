@@ -3,7 +3,7 @@ fastjet_path = '/workspace/fastjet/lib/python3.7/site-packages/fastjet.py'
 sys.path.append(os.path.dirname(fastjet_path))
 
 import fastjet as fj
-from JetTree import *
+from .JetTree import *
 import numpy as np
 
 class Jet_Transformer():
