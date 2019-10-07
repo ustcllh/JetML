@@ -1,24 +1,23 @@
-import torch
-import torch.nn as nn
-from reader import *
-from feed import *
-from classifier import *
+import numpy as np
 
-datafile = '/workspace/samples/PythiaEventsTune14PtHat120_0.pu14'
-"""
-datafile = '/workspace/samples/jewel_1.pu14'
-"""
 
-rd = Reader(datafile)
-event = rd.next_event()
-jf = Jet_Finder()
-jets = jf(event)
+ifs = open('./training/jewel/jewel_1')
 
-jc = Jet_Classifier('lstm')
+line = ifs.readline()
 
-# for jet in jets:
-print(datafile)
-jet = jets[0]
-print(jet)
-x = jc(jet)
-print(x)
+line = np.fromstring(line, dtype=float, sep=',')
+
+line = np.reshape(line, (-1, 5))
+
+print(line)
+
+
+a = [1, 2, 3]
+
+b = [2, 3, 4]
+
+print(a+b)
+
+a.append(b)
+
+print(a)
