@@ -25,8 +25,8 @@ ofs_strc= open(ofn_strc,"w+")
 event = reader.next_event()
 nevent = 0
 
-mask = np.array([False, False, True, False, False, False])
-jc = Jet_Classifier('lstm', mask)
+mask = np.array([True, True, True, True, False, False])
+jc = Jet_Classifier('./model/lstm_11110.pt', mask)
 
 while event:
     jf = Jet_Finder()
@@ -69,8 +69,9 @@ while event:
         e = jet.e()
         eta = jet.eta()
         phi = jet.phi()
+        ang = cal_angularity(i)
 
-        ofs_jet.write('%f,%f,%f,%f,%f,%f,%f,%f,%f,%d' % (px, py, pz, e, eta, phi, lstm[0], ratio, dr, pid))
+        ofs_jet.write('%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%f,%f,%f' % (px, py, pz, e, eta, phi, lstm[0], ratio, dr, pid, ang[0], ang[1], ang[2]))
         ofs_strc.write('\n')
         ofs_jet.write('\n')
     nevent += 1

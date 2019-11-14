@@ -38,17 +38,19 @@ def do_groom(pseudojet, zcut=0.5, beta=1., R0=0.4):
         return pseudojet.constituents()
     return particles
 
-def angularity(pseudojet):
+def cal_angularity(pseudojet):
     ptd = 0
     mass = 0
     width = 0
+    R = 0.4
     phi = pseudojet.phi()
     eta = pseudojet.eta()
+    pt = pseudojet.pt()
     for particle in pseudojet.constituents():
-        dr = math.sqrt(math.pow(particle.eta()-jet_eta, 2) + math.pow(particle.phi()-jet_phi, 2))
-        self.ptd += math.pow(particle.pt()/jet_pt, 2)
-        self.width += particle.pt()/jet_pt * dr/R
-        self.mass += particle.pt()/jet_pt * math.pow(dr/R, 2)
+        dr = math.sqrt(math.pow(particle.eta()-eta, 2) + math.pow(particle.phi()-phi, 2))
+        ptd += math.pow(particle.pt()/pt, 2)
+        width += particle.pt()/pt * dr/R
+        mass += particle.pt()/pt * math.pow(dr/R, 2)
     return [ptd, mass, width]
 
 class Jet:
@@ -73,10 +75,10 @@ class Jet:
         return self.pseudojet_groomed
 
     def angularity(self):
-        return angularity(self.pseudojet)
+        return cal_angularity(self.pseudojet)
 
     def angularity_groomed(self):
-        return angularity(self.pseudojet_groomed)
+        return cal_angularity(self.pseudojet_groomed)
 
 
 class JetTree:

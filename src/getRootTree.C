@@ -141,6 +141,15 @@ int main(int argc, char* argv[]){
         else
           isgluon = 0;
       }
+      else if(icell==10){
+        ang_ptd = std::stof(cell);
+      }
+      else if(icell==11){
+        ang_mass = std::stof(cell);
+      }
+      else if(icell==12){
+        ang_width = std::stof(cell);
+      }
       icell++;
       // ss >> px >> py >> pz >> e >> eta >> phi >> lstm >> ang_ptd >> ang_mass >> ang_width >> ratio >> dr >> isgluon;
     }

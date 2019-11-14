@@ -27,11 +27,11 @@ nevent = 0
 
 while event:
     jf = Jet_Finder()
-    jets = jf(event)
+    jets, partons = jf(event)
     for i in jets:
         # algorithms:   fj.antikt_algorithm fj.cambridge_algorithm
-        jet = Jet(i, algorithm=fj.cambridge_algorithm, R=1000.)
-        jet_tr = JetTree(jet.pseudojet)
+        jet = Jet(i, algorithm=fj.cambridge_algorithm, R=1000.).pseudojet
+        jet_tr = JetTree(jet)
         structure = jet_tr.primary_structure()
 
         if not structure:
