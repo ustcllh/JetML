@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import glob
+import sys
 from hyperopt import fmin, tpe, hp, space_eval
 
 from src.JetML.Model import *
@@ -13,6 +14,7 @@ print('Using device: ', device)
 
 space = hp.choice('hyper_parameters', [
     {
+        'case': sys.argv[1],
         'num_batch': hp.choice('num_batch', [100, 200, 300, 400]),
         'num_layers': hp.quniform('num_layers', 5, 10, 1),
         'learning_rate': hp.uniform('learning_rate', 0.005, 0.01),
@@ -29,35 +31,41 @@ def train(args):
     learning_rate = args['learning_rate']
     decay_factor = args['decay_factor']
     num_epochs = int(args['num_epochs'])
+    case = args['case']
 
     print("Hyper Parameters: ")
     print(args)
 
-    # training dataset
-    jewel_training = Training_Samples('./results/ptmin80/hybrid_zcut0p5_beta1p5.root', [1., 0.], [0, 30000])
-    pythia_training = Training_Samples('./results/ptmin80/pythia_zcut0p5_beta1p5.root', [0., 1.], [0, 30000])
+    # dataset
+    samples = {
+        'pythia': './results/ptmin80/pythia_zcut0p5_beta1p5.root',
+        'jewel_NR': './results/ptmin80/jewel_NR_zcut0p5_beta1p5.root',
+        'jewel_R': './results/ptmin80/jewel_R_zcut0p5_beta1p5.root',
+        'hybrid': './results/ptmin80/hybrid_zcut0p5_beta1p5.root'
+    }
 
-    # print('# of Jets (training): %d jewel jets, %d pythia jets' % (jewel_training.len, pythia_training.len))
+    print('Pos Class: %s (%s)' % (case, samples[case]))
+    print('Neg Class: %s (%s)' % ('pythia', samples['pythia']))
 
+    pos_training = Training_Samples(samples[case], [1., 0.], [0, 30000])
+    neg_training = Training_Samples(samples['pythia'], [0., 1.], [0, 30000])
+    pos_validation = Training_Samples(samples[case], [1., 0.], [30001, 50000])
+    neg_validation = Training_Samples(samples['pythia'], [0., 1.], [ 30001, 50000])
+
+    # training dataloader
     data_loader_training = data.DataLoader(
         data.ConcatDataset([
-            jewel_training,
-            pythia_training
+            pos_training,
+            neg_training
         ]),
         batch_size=num_batch, shuffle=True, num_workers=4, drop_last=True, collate_fn=collate_fn_pad
     )
-
-    # validation dataset
+    # validation dataloader
     # batch size 500
-    jewel_validation = Training_Samples('./results/ptmin80/hybrid_zcut0p5_beta1p5.root', [1., 0.], [30001, 50000])
-    pythia_validation = Training_Samples('./results/ptmin80/pythia_zcut0p5_beta1p5.root', [0., 1.], [ 30001, 50000])
-
-    # print('# of Jets (validation): %d jewel jets, %d pythia jets' % (jewel_validation.len, pythia_validation.len))
-
     data_loader_validation = data.DataLoader(
         data.ConcatDataset([
-            jewel_validation,
-            pythia_validation
+            pos_validation,
+            neg_validation
         ]),
         batch_size=500, shuffle=True, num_workers=4, drop_last=True, collate_fn=collate_fn_pad
     )
@@ -117,5 +125,5 @@ def train(args):
     print('Validation Loss: {:.4f}, Accuracy: {:.2f} %'.format(loss_total, accuracy))
     return loss_total
 
-best = fmin(train, space, algo=tpe.suggest, max_evals=1)
+best = fmin(train, space, algo=tpe.suggest, max_evals=20)
 print(space_eval(space, best))
