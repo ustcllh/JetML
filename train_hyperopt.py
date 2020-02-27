@@ -15,13 +15,24 @@ print('Using device: ', device)
 space = hp.choice('hyper_parameters', [
     {
         'case': sys.argv[1],
-        'num_batch': hp.choice('num_batch', [100, 200, 300, 400]),
+        'num_batch': hp.quniform('num_batch', 1000, 8000, 1000),
         'num_layers': hp.quniform('num_layers', 5, 10, 1),
-        'learning_rate': hp.uniform('learning_rate', 0.005, 0.01),
-        'decay_factor': hp.uniform('decay_factor', 0.5, 0.8),
-        'num_epochs':hp.quniform('num_epochs', 5, 20, 5)
+        'learning_rate': hp.uniform('learning_rate', 0.01, 0.1),
+        'decay_factor': hp.uniform('decay_factor', 0.5, 0.9),
+        'num_epochs':hp.quniform('num_epochs', 5, 30, 5)
     }
 ])
+
+# space = hp.choice('hyper_parameters', [
+#     {
+#         'case': sys.argv[1],
+#         'num_batch': 1000,
+#         'num_layers': 5,
+#         'learning_rate': hp.uniform('learning_rate', 0.01, 0.1),
+#         'decay_factor': hp.uniform('decay_factor', 0.5, 0.9),
+#         'num_epochs': 10
+#     }
+# ])
 
 
 def train(args):
@@ -38,19 +49,22 @@ def train(args):
 
     # dataset
     samples = {
-        'pythia': './results/ptmin80/pythia_zcut0p5_beta1p5.root',
-        'jewel_NR': './results/ptmin80/jewel_NR_zcut0p5_beta1p5.root',
-        'jewel_R': './results/ptmin80/jewel_R_zcut0p5_beta1p5.root',
-        'hybrid': './results/ptmin80/hybrid_zcut0p5_beta1p5.root'
+        'pythia': './results/ptmin130/pythia.root',
+        'jewel_NR': './results/ptmin130/jewel_NR.root',
+        'jewel_R': './results/ptmin130/jewel_R.root',
+        'hybrid': './results/ptmin130/hybrid.root'
     }
 
     print('Pos Class: %s (%s)' % (case, samples[case]))
     print('Neg Class: %s (%s)' % ('pythia', samples['pythia']))
 
-    pos_training = Training_Samples(samples[case], [1., 0.], [0, 30000])
-    neg_training = Training_Samples(samples['pythia'], [0., 1.], [0, 30000])
-    pos_validation = Training_Samples(samples[case], [1., 0.], [30001, 50000])
-    neg_validation = Training_Samples(samples['pythia'], [0., 1.], [ 30001, 50000])
+    pos_training = Training_Samples(samples[case], [1., 0.], [0, 43000])
+    neg_training = Training_Samples(samples['pythia'], [0., 1.], [0, 43000])
+    pos_validation = Training_Samples(samples[case], [1., 0.], [43001, 53000])
+    neg_validation = Training_Samples(samples['pythia'], [0., 1.], [43001, 53000])
+
+    print('Training: %d True, %d False' % (pos_training.len, neg_training.len))
+    print('Validation: %d True, %d False' % (pos_validation.len, neg_validation.len))
 
     # training dataloader
     data_loader_training = data.DataLoader(
@@ -71,8 +85,8 @@ def train(args):
     )
 
     # model
-    model = LSTM(input_size=3, output_size=2, num_layers=num_layers)
-    lossFunction = nn.BCELoss()
+    model = LSTM(input_size=4, output_size=2, num_layers=num_layers)
+
 
     # optimizer and learning rate scheduler
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -82,7 +96,7 @@ def train(args):
 
     # Training
     for epoch in range(num_epochs):
-        for step, (seq, label, length) in enumerate(data_loader_training):
+        for step, (seq, weight, label, length) in enumerate(data_loader_training):
             out, hidden = model(seq)
 
             # cat the output
@@ -92,20 +106,21 @@ def train(args):
             res = res.view(num_batch, -1)
             res = nn.functional.softmax(res, dim=1)
 
+            lossFunction = nn.BCELoss(weight=weight)
             loss = lossFunction(res,label)
             optimizer.zero_grad()
             loss.backward(retain_graph=True)
             optimizer.step()
 
-            # if(step%10==0):
-            #     print('Eopch: [{}/{}], Step: {}, Loss: {:.2f}'.format(epoch+1, num_epochs, step, loss.item()))
+            if(step%10==0):
+                print('Eopch: [{}/{}], Step: {}, Loss: {:.2f}'.format(epoch+1, num_epochs, step, loss.item()))
 
     # validation
     # batch_size 500
     loss_total = 0
     corr_total = 0
     n_total = 0
-    for step, (seq, label, length) in enumerate(data_loader_validation):
+    for step, (seq, weight, label, length) in enumerate(data_loader_validation):
         out, hidden = model(seq)
         # cat the output
         res = out[0][length[0]-1]
@@ -114,6 +129,7 @@ def train(args):
         res = res.view(500, -1)
         res = nn.functional.softmax(res, dim=1)
 
+        lossFunction = nn.BCELoss(weight=weight)
         loss = lossFunction(res,label)
         loss_total = loss_total + loss.item()
 
@@ -125,5 +141,5 @@ def train(args):
     print('Validation Loss: {:.4f}, Accuracy: {:.2f} %'.format(loss_total, accuracy))
     return loss_total
 
-best = fmin(train, space, algo=tpe.suggest, max_evals=20)
+best = fmin(train, space, algo=tpe.suggest, max_evals=1)
 print(space_eval(space, best))
