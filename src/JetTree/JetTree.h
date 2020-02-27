@@ -88,6 +88,7 @@ public:
   double z();
   double delta();
   double kperp();
+  double m();
 
   // grooming
   void groom(SoftDropGroomer* groomer, bool do_recursive_correction=false);

@@ -168,6 +168,11 @@ double JetTree::kperp(){
   else return -999;
 };
 
+double JetTree::m(){
+  auto temp = this->pseudojet();
+  return temp.m();
+};
+
 // grooming
 
 double JetTree::zg(SoftDropGroomer* groomer){

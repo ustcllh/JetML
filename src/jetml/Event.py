@@ -38,9 +38,9 @@ class Reader:
         dict['0'] = self.sift(particles, 0)
         dict['1'] = self.sift(particles, 1)
         dict['2'] = self.sift(particles, 2)
-        pos = self.get_position(description)
+        des = self.get_description(description)
 
-        return dict, pos
+        return dict, des
 
     def next_event(self):
         return self.__next__()
@@ -53,15 +53,29 @@ class Reader:
         return res
 
     @staticmethod
-    def get_position(description):
+    def get_description(description):
+        des = {}
         try:
             id_x = description.index('X')
-            id_y = description.index('Y')
             x = description[id_x + 1]
-            y = description[id_y + 1]
-            return [x, y]
+            des['X'] = x
         except:
-            return []
+            des['X'] = 0
+
+        try:
+            id_y = description.index('Y')
+            y = description[id_y + 1]
+            des['Y'] = y
+        except:
+            des['Y'] = 0
+
+        try:
+            id_weight = description.index('weight')
+            des['weight'] = description[id_weight + 1]
+        except:
+            des['weight'] = 1
+
+        return des
 
     @staticmethod
     def pseudojet(particle):

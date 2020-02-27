@@ -12,14 +12,13 @@ start_time = time.time()
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print('Using device: ', device)
 
-njet = 40000
-prefix = 'jewel_R_zcut0p5_beta1p5'
-jewel_training = Training_Samples('./results/ptmin80/jewel_R_zcut0p5_beta1p5.root', [1., 0.], njet)
-pythia_training = Training_Samples('./results/ptmin80/pythia_zcut0p5_beta1p5.root', [0., 1.], njet)
+prefix = 'jewel_NR'
+jewel_training = Training_Samples('./results/ptmin130/jewel_NR.root', [1., 0.], [0, 43000])
+pythia_training = Training_Samples('./results/ptmin130/pythia.root', [0., 1.], [0, 43000])
 
 print('# of Jets (training): %d jewel jets, %d pythia jets' % (jewel_training.len, pythia_training.len))
 
-num_batch = 100
+num_batch = 8000
 data_loader_training = data.DataLoader(
     data.ConcatDataset([
         jewel_training,
@@ -32,19 +31,19 @@ data_loader_training = data.DataLoader(
 # batch = iter.next()
 # print(batch)
 
-model = LSTM(batch_size=num_batch, input_size=3, output_size=2, num_layers=5)
-lossFunction = nn.BCELoss()
+model = LSTM(input_size=4, output_size=2, num_layers=5)
 
 # optimizer and learning rate scheduler
-optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.08)
 
 # learning rate decay exponentially
-scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.8, last_epoch=-1)
+scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.9, last_epoch=-1)
 
-num_epochs = 20
+num_epochs = 30
 for epoch in range(num_epochs):
-    for step, (seq, label, length) in enumerate(data_loader_training):
+    for step, (seq, weight, label, length) in enumerate(data_loader_training):
         out, hidden = model(seq)
+
 
         # cat the output
         res = out[0][length[0]-1]
@@ -53,6 +52,7 @@ for epoch in range(num_epochs):
         res = res.view(num_batch, -1)
         res = nn.functional.softmax(res, dim=1)
 
+        lossFunction = nn.BCELoss(weight=weight)
         loss = lossFunction(res,label)
         optimizer.zero_grad()
         loss.backward(retain_graph=True)
