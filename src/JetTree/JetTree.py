@@ -617,6 +617,9 @@ class JetTree(_object):
     def kperp(self):
         return _JetTree.JetTree_kperp(self)
 
+    def m(self):
+        return _JetTree.JetTree_m(self)
+
     def groom(self, groomer, do_recursive_correction=False):
         return _JetTree.JetTree_groom(self, groomer, do_recursive_correction)
 

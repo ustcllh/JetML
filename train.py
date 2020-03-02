@@ -18,7 +18,7 @@ pythia_training = Training_Samples('./results/ptmin130/pythia.root', [0., 1.], [
 
 print('# of Jets (training): %d jewel jets, %d pythia jets' % (jewel_training.len, pythia_training.len))
 
-num_batch = 8000
+num_batch = 5000
 data_loader_training = data.DataLoader(
     data.ConcatDataset([
         jewel_training,
@@ -31,7 +31,7 @@ data_loader_training = data.DataLoader(
 # batch = iter.next()
 # print(batch)
 
-model = LSTM(input_size=4, output_size=2, num_layers=5)
+model = LSTM(input_size=4, output_size=2, num_layers=7)
 
 # optimizer and learning rate scheduler
 optimizer = torch.optim.Adam(model.parameters(), lr=0.08)

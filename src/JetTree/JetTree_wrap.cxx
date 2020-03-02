@@ -12944,6 +12944,28 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_JetTree_m(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  JetTree *arg1 = (JetTree *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  double result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:JetTree_m",&obj0)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_JetTree, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "JetTree_m" "', argument " "1"" of type '" "JetTree *""'"); 
+  }
+  arg1 = reinterpret_cast< JetTree * >(argp1);
+  result = (double)(arg1)->m();
+  resultobj = SWIG_From_double(static_cast< double >(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_JetTree_groom__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   JetTree *arg1 = (JetTree *) 0 ;
@@ -13354,6 +13376,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"JetTree_z", _wrap_JetTree_z, METH_VARARGS, NULL},
 	 { (char *)"JetTree_delta", _wrap_JetTree_delta, METH_VARARGS, NULL},
 	 { (char *)"JetTree_kperp", _wrap_JetTree_kperp, METH_VARARGS, NULL},
+	 { (char *)"JetTree_m", _wrap_JetTree_m, METH_VARARGS, NULL},
 	 { (char *)"JetTree_groom", _wrap_JetTree_groom, METH_VARARGS, NULL},
 	 { (char *)"JetTree_zg", _wrap_JetTree_zg, METH_VARARGS, NULL},
 	 { (char *)"JetTree_deltag", _wrap_JetTree_deltag, METH_VARARGS, NULL},
