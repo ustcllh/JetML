@@ -15,11 +15,11 @@ print('Using device: ', device)
 space = hp.choice('hyper_parameters', [
     {
         'case': sys.argv[1],
-        'num_batch': hp.quniform('num_batch', 1000, 8000, 1000),
-        'num_layers': hp.quniform('num_layers', 5, 10, 1),
-        'learning_rate': hp.uniform('learning_rate', 0.01, 0.1),
-        'decay_factor': hp.uniform('decay_factor', 0.5, 0.9),
-        'num_epochs':hp.quniform('num_epochs', 5, 30, 5)
+        'num_batch': hp.quniform('num_batch', 20000, 40000, 2000),
+        'num_layers': hp.quniform('num_layers', 5, 8, 1),
+        'learning_rate': hp.uniform('learning_rate', 0.01, 0.05),
+        'decay_factor': hp.uniform('decay_factor', 0.7, 0.99),
+        'num_epochs':hp.quniform('num_epochs', 10, 20, 5)
     }
 ])
 
@@ -58,10 +58,10 @@ def train(args):
     print('Pos Class: %s (%s)' % (case, samples[case]))
     print('Neg Class: %s (%s)' % ('pythia', samples['pythia']))
 
-    pos_training = Training_Samples(samples[case], [1., 0.], [0, 43000])
-    neg_training = Training_Samples(samples['pythia'], [0., 1.], [0, 43000])
-    pos_validation = Training_Samples(samples[case], [1., 0.], [43001, 53000])
-    neg_validation = Training_Samples(samples['pythia'], [0., 1.], [43001, 53000])
+    pos_training = Training_Samples(samples[case], [1., 0.], [0, 150000])
+    neg_training = Training_Samples(samples['pythia'], [0., 1.], [0, 150000])
+    pos_validation = Training_Samples(samples[case], [1., 0.], [150001, 180000])
+    neg_validation = Training_Samples(samples['pythia'], [0., 1.], [150001, 180000])
 
     print('Training: %d True, %d False' % (pos_training.len, neg_training.len))
     print('Validation: %d True, %d False' % (pos_validation.len, neg_validation.len))
@@ -75,13 +75,13 @@ def train(args):
         batch_size=num_batch, shuffle=True, num_workers=4, drop_last=True, collate_fn=collate_fn_pad
     )
     # validation dataloader
-    # batch size 500
+    # batch size 1000
     data_loader_validation = data.DataLoader(
         data.ConcatDataset([
             pos_validation,
             neg_validation
         ]),
-        batch_size=500, shuffle=True, num_workers=4, drop_last=True, collate_fn=collate_fn_pad
+        batch_size=1000, shuffle=True, num_workers=4, drop_last=True, collate_fn=collate_fn_pad
     )
 
     # model
@@ -126,7 +126,7 @@ def train(args):
         res = out[0][length[0]-1]
         for i in range(1, len(length)):
             res = torch.cat((res,out[i][length[i]-1]), dim=0)
-        res = res.view(500, -1)
+        res = res.view(1000, -1)
         res = nn.functional.softmax(res, dim=1)
 
         lossFunction = nn.BCELoss(weight=weight)
@@ -135,11 +135,11 @@ def train(args):
 
         corr = (res.argmax(dim=1)==label.argmax(dim=1)).sum().item()
         corr_total = corr_total + corr
-        n_total = n_total + 500
+        n_total = n_total + 1000
 
     accuracy = 100 * corr_total / n_total
     print('Validation Loss: {:.4f}, Accuracy: {:.2f} %'.format(loss_total, accuracy))
     return loss_total
 
-best = fmin(train, space, algo=tpe.suggest, max_evals=1)
+best = fmin(train, space, algo=tpe.suggest, max_evals=10)
 print(space_eval(space, best))

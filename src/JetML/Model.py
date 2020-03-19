@@ -8,19 +8,21 @@ class LSTM(nn.Module):
     # input_size: dim
     # hidden_size: 2 output for classification
     # num_layers: see illustration below
-    def __init__(self, input_size=3, output_size=2, num_layers=5):
+    def __init__(self, input_size=3, output_size=2, num_layers=5, device=torch.device('cpu')):
         self.input_size = input_size
         self.output_size = output_size
         self.num_layers = num_layers
+        self.device = device
 
         super(LSTM, self).__init__()
 
-        self.lstm = nn.LSTM(input_size=self.input_size, hidden_size=self.output_size, num_layers=self.num_layers, batch_first=True)
+        self.lstm = nn.LSTM(input_size=self.input_size, hidden_size=self.output_size, num_layers=self.num_layers,
+        batch_first=True).to(self.device)
 
     def forward(self, x):
         batch_size = len(x)
-        h_0 = self.hidden_init(batch_size)
-        c_0 = self.hidden_init(batch_size)
+        h_0 = self.hidden_init(batch_size).to(self.device)
+        c_0 = self.hidden_init(batch_size).to(self.device)
         x, hidden = self.lstm(x, (h_0, c_0))
         return x, hidden
 
