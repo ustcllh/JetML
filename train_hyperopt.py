@@ -10,6 +10,8 @@ from src.JetML.Dataset import *
 
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+cpu = torch.device('cpu')
+
 print('Using device: ', device)
 
 space = hp.choice('hyper_parameters', [
@@ -19,7 +21,7 @@ space = hp.choice('hyper_parameters', [
         'num_layers': hp.quniform('num_layers', 5, 8, 1),
         'learning_rate': hp.uniform('learning_rate', 0.01, 0.05),
         'decay_factor': hp.uniform('decay_factor', 0.7, 0.99),
-        'num_epochs':hp.quniform('num_epochs', 10, 20, 5)
+        'num_epochs':hp.quniform('num_epochs', 10, 30, 5)
     }
 ])
 
@@ -72,20 +74,22 @@ def train(args):
             pos_training,
             neg_training
         ]),
-        batch_size=num_batch, shuffle=True, num_workers=4, drop_last=True, collate_fn=collate_fn_pad
+        batch_size=num_batch, shuffle=True, num_workers=2, drop_last=True, collate_fn=collate_fn_pad
     )
     # validation dataloader
-    # batch size 1000
+    # batch size 2000
+
+    num_batch_validation = 2000
     data_loader_validation = data.DataLoader(
         data.ConcatDataset([
             pos_validation,
             neg_validation
         ]),
-        batch_size=1000, shuffle=True, num_workers=4, drop_last=True, collate_fn=collate_fn_pad
+        batch_size=num_batch_validation, shuffle=True, num_workers=2, drop_last=True, collate_fn=collate_fn_pad
     )
 
     # model
-    model = LSTM(input_size=4, output_size=2, num_layers=num_layers)
+    model = LSTM(input_size=4, output_size=2, num_layers=num_layers, device=device)
 
 
     # optimizer and learning rate scheduler
@@ -97,7 +101,9 @@ def train(args):
     # Training
     for epoch in range(num_epochs):
         for step, (seq, weight, label, length) in enumerate(data_loader_training):
+            seq = seq.to(device)
             out, hidden = model(seq)
+            out = out.to(cpu)
 
             # cat the output
             res = out[0][length[0]-1]
@@ -116,17 +122,20 @@ def train(args):
                 print('Eopch: [{}/{}], Step: {}, Loss: {:.2f}'.format(epoch+1, num_epochs, step, loss.item()))
 
     # validation
-    # batch_size 500
+    # batch_size 2000
     loss_total = 0
     corr_total = 0
     n_total = 0
     for step, (seq, weight, label, length) in enumerate(data_loader_validation):
+        seq = seq.to(device)
         out, hidden = model(seq)
+        out = out.to(cpu)
+
         # cat the output
         res = out[0][length[0]-1]
         for i in range(1, len(length)):
             res = torch.cat((res,out[i][length[i]-1]), dim=0)
-        res = res.view(1000, -1)
+        res = res.view(num_batch_validation, -1)
         res = nn.functional.softmax(res, dim=1)
 
         lossFunction = nn.BCELoss(weight=weight)
@@ -135,7 +144,7 @@ def train(args):
 
         corr = (res.argmax(dim=1)==label.argmax(dim=1)).sum().item()
         corr_total = corr_total + corr
-        n_total = n_total + 1000
+        n_total = n_total + num_batch_validation
 
     accuracy = 100 * corr_total / n_total
     print('Validation Loss: {:.4f}, Accuracy: {:.2f} %'.format(loss_total, accuracy))
