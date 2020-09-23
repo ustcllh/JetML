@@ -1,8 +1,10 @@
 CXX=g++
 SWIG=swig
+CXX_FLAGS= -std=c++11 -fPIC -fno-lto
 
 PYTHON_CONFIG=python3-config
 PYTHON_INCLUDE=`python3-config --includes`
+PYTHON_LDFLAGS=`python3-config --ldflags`
 PYTHON_LIB=`python3-config --libs`
 
 FASTJET_CONFIG=/workspace/fastjet/bin/fastjet-config
@@ -21,13 +23,13 @@ $(SRC)/JetTree_wrap.cxx: $(SRC)/JetTree.i
 		$(SWIG) -c++ -python $<
 
 $(SRC)/JetTree.o: $(SRC)/JetTree.cxx
-		$(CXX) -fPIC -c $< -o $@ $(FASTJET_INCLUDE) $(PYTHON_INCLUDE) -I$(SRC)
+		$(CXX) $(CXX_FLAGS) -c $< -o $@ $(FASTJET_INCLUDE) $(PYTHON_INCLUDE) -I$(SRC)
 
 $(SRC)/JetTree_wrap.o: $(SRC)/JetTree_wrap.cxx
-		$(CXX) -fPIC -c $< -o $@ $(FASTJET_INCLUDE) $(PYTHON_INCLUDE)
+		$(CXX) $(CXX_FLAGS) -c $< -o $@ $(FASTJET_INCLUDE) $(PYTHON_INCLUDE)
 
 $(SRC)/_JetTree.so: $(SRC)/JetTree.o $(SRC)/JetTree_wrap.o
-		$(CXX) $^ -shared -o $@ $(FASTJET_LIB) $(PYTHON_LIB) -lstdc++
+		$(CXX) $(CXX_FLAGS) $^ -shared -o $@ $(PYTHON_LDFLAGS) $(FASTJET_LIB) $(PYTHON_LIB) -lstdc++
 
 clean:
 	rm $(SRC)/JetTree.py

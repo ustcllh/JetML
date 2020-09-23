@@ -13,7 +13,7 @@ from array import array
 # 2: jewel_NR
 # 3: jewel_R
 # 4: hybrid
-case = 4
+case = 2
 
 # root tree
 ofn = 'default.root'
@@ -133,7 +133,8 @@ if(case==1): # pythia
 
 
 if(case==2): # jewel NR
-    input = './pu14/merge/jewel_NR.pu14'
+    input = './pu14/merge/jewel_R.pu14'
+
     rd = Reader(input)
     dict, des = rd.next_event()
     nevent = 0
@@ -156,11 +157,11 @@ if(case==2): # jewel NR
             eta[0] = jtr.pseudojet().eta()
             phi[0] = jtr.pseudojet().phi()
             jetpt[0] = jtr.pseudojet().pt()
-            m_ungroomed[0] = jtr.pseudojet().pt()
+            m_ungroomed[0] = jtr.pseudojet().m()
             zg[0] = jtr.zg(groomer=sd)
             deltag[0] = jtr.deltag(groomer=sd)
             jtr.groom(groomer=sd, do_recursive_correction=False)
-            m_groomed[0] = jtr.pseudojet().pt()
+            m_groomed[0] = jtr.pseudojet().m()
             if jtr.has_structure():
                 has_structure[0] = True
             else:

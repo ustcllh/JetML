@@ -38,6 +38,7 @@ class Training_Samples(data.Dataset):
             self.weight_sum += tr.weight
             item = []
             for i in range(depth):
+                # item.append([z[i], delta[i], kperp[i]])
                 item.append([z[i], delta[i], kperp[i], m[i]])
             self.data.append(item)
             idx += 1
