@@ -59,11 +59,18 @@ print('input background file: %s' % input_bkg)
 
 
 # root tree
-ofn = 'default.root'
+# ofn = 'default.root'
+try:
+    ofn = sys.argv[7]
+except:
+    ofn = './default.root'
+
 output = TFile(ofn, 'recreate')
 tr = TTree('jet', 'jet')
 tr_cs = TTree('jetcs', 'jet cs')
 tr_ics = TTree('jetics', 'jet ics')
+
+print('output file: %s' % ofn)
 
 nevent_max = 10
 maxn = 100
