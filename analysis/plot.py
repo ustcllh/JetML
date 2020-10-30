@@ -1,25 +1,37 @@
 from ROOT import TFile, TTree, TCanvas
 from ROOT import TH1F, TProfile, TLine
-from ROOT import TLegend, TPad
+from ROOT import TLegend, TPad, TLatex
 from ROOT import gStyle, gPad
+import sys
 
 gStyle.SetOptStat(1110)
-# input
-input = './resolution.root'
-f = TFile(input, 'READ')
 
+# input
+try:
+    input = sys.argv[1]
+    tree = sys.argv[2]
+    prefix = sys.argv[3]
+    suffix = sys.argv[4]
+
+except:
+    input = './resolution.root'
+    tree = 'jetics'
+    prefix = 'icsjet'
+    suffix = 'default'
+
+f = TFile(input, 'READ')
 # tr = f.Get('jetcs')
 # prefix = 'csjet_'
-# lgname = 'CS Jet'
+# prefix = 'CS Jet'
+zcut = 0.1
 
-tr = f.Get('jetics')
-prefix = 'icsjet_'
-lgname = 'ICS Jet'
+tr = f.Get(tree)
 
 
 
 def DrawJES():
-    th = TH1F('th', 'Jet Energy Scale (JES)JES', 100, 0.5, 1.5)
+    th = TH1F('th', 'Jet Energy Scale (JES)JES', 50, 0.5, 1.5)
+    binsize = 1./50
     i=0
     max = tr.GetEntriesFast()
     while i<max:
@@ -32,14 +44,14 @@ def DrawJES():
         i+=1
     c = TCanvas('c', 'c', 600, 600)
     c.cd()
-    th.Scale(1./th.Integral())
+    th.Scale(1./th.Integral()/binsize)
     th.SetLineColor(4)
     th.SetLineWidth(2)
     th.Draw()
-    c.SaveAs(prefix+'jes.pdf')
+    c.SaveAs(prefix+'_jes_'+suffix+'.pdf')
 
 def DrawJESDiff():
-    tp = TProfile('tp1', 'JES Profilejet pt', 100, 100, 500)
+    tp = TProfile('tp1', 'JES Profilejet pt', 20, 100, 500)
     i=0
     max = tr.GetEntriesFast()
     while i<max:
@@ -65,7 +77,7 @@ def DrawJESDiff():
     tl.SetLineColor(2)
     tl.SetLineWidth(2)
     tl.Draw("same")
-    c.SaveAs(prefix+'jes_diff.pdf')
+    c.SaveAs(prefix+'_jes_diff_'+suffix+'.pdf')
 
 def Draw_z():
     h1 = TH1F('h1', 'zz', 50, 0, 0.5)
@@ -79,9 +91,11 @@ def Draw_z():
             i+=1
             continue
         for id in range(tr.depth):
-            h1.Fill(tr.z[id])
+            if tr.z[id]>zcut:
+                h1.Fill(tr.z[id])
         for id in range(tr.depthm):
-            h2.Fill(tr.zm[id])
+            if tr.zm[id]>zcut:
+                h2.Fill(tr.zm[id])
         i+=1
     c = TCanvas('c', 'c', 600, 600)
     gStyle.SetOptStat(0000)
@@ -114,8 +128,14 @@ def Draw_z():
     h2.Draw("same")
     lg = TLegend(0.6, 0.7, 0.88, 0.88)
     lg.AddEntry(h1, 'Jet', 'le')
-    lg.AddEntry(h2, lgname, 'le')
+    lg.AddEntry(h2, prefix, 'le')
     lg.Draw('same')
+
+    latex = TLatex()
+    latex.SetTextSize(0.05)
+    latex.SetTextAlign(13)
+    latex.DrawLatex(.02,150,"SoftDrop z_{cut}=0.1 #beta=0.")
+    latex.Draw("same")
 
     c.cd()
     p2 = TPad("p2", "p2", 0, 0, 1., 0.25)
@@ -151,7 +171,7 @@ def Draw_z():
     tl.SetLineWidth(1)
     tl.Draw("same")
 
-    c.SaveAs(prefix+'z.pdf')
+    c.SaveAs(prefix+'_z_'+suffix+'.pdf')
 
 def Draw_delta():
     h1 = TH1F('h1', '#Delta#Delta', 40, 0, 0.4)
@@ -165,9 +185,11 @@ def Draw_delta():
             i+=1
             continue
         for id in range(tr.depth):
-            h1.Fill(tr.delta[id])
+            if tr.z[id]>zcut:
+                h1.Fill(tr.delta[id])
         for id in range(tr.depthm):
-            h2.Fill(tr.deltam[id])
+            if tr.zm[id]>zcut:
+                h2.Fill(tr.deltam[id])
         i+=1
     c = TCanvas('c', 'c', 600, 600)
     gStyle.SetOptStat(0000)
@@ -200,8 +222,14 @@ def Draw_delta():
     h2.Draw("same")
     lg = TLegend(0.6, 0.7, 0.88, 0.88)
     lg.AddEntry(h1, 'Jet', 'le')
-    lg.AddEntry(h2, lgname, 'le')
+    lg.AddEntry(h2, prefix, 'le')
     lg.Draw('same')
+
+    latex = TLatex()
+    latex.SetTextSize(0.05)
+    latex.SetTextAlign(13)
+    latex.DrawLatex(.02,200,"SoftDrop z_{cut}=0.1 #beta=0.")
+    latex.Draw("same")
 
     c.cd()
     p2 = TPad("p2", "p2", 0, 0, 1., 0.25)
@@ -238,7 +266,7 @@ def Draw_delta():
     tl.SetLineWidth(1)
     tl.Draw("same")
 
-    c.SaveAs(prefix+'delta.pdf')
+    c.SaveAs(prefix+'_delta_'+suffix+'.pdf')
 
 def Draw_depth():
     h1 = TH1F('h1', 'depth', 20, 0., 20.)
@@ -283,7 +311,7 @@ def Draw_depth():
     h2.Draw("same")
     lg = TLegend(0.6, 0.7, 0.88, 0.88)
     lg.AddEntry(h1, 'Jet', 'le')
-    lg.AddEntry(h2, lgname, 'le')
+    lg.AddEntry(h2, prefix, 'le')
     lg.Draw('same')
 
     c.cd()
@@ -320,7 +348,7 @@ def Draw_depth():
     tl.SetLineWidth(1)
     tl.Draw("same")
 
-    c.SaveAs(prefix+'depth.pdf')
+    c.SaveAs(prefix+'_depth_'+suffix+'.pdf')
 
 DrawJES()
 DrawJESDiff()

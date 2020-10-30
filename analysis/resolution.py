@@ -2,21 +2,31 @@
 from ROOT import TFile, TTree, TCanvas
 from array import array
 import math
+import sys
 
 
 
-# input
-input = '../default.root'
+
+
+try:
+    input = sys.argv[1]
+    output = sys.argv[2]
+except:
+    input = '../default.root'
+    output = './resolution.root'
+
+print('input file: %s' % input)
+print('output file: %s' % output)
+
 f = TFile(input, 'READ')
 tr = f.Get('jet')
-tr_cs = f.Get('jetcs')
-tr_ics = f.Get('jetics')
+tr_cs = f.Get('csjet')
+tr_ics = f.Get('icsjet')
 
 #output
-output = './resolution.root'
 of = TFile(output, 'recreate')
-otr_cs = TTree('jetcs', 'jetcs')
-otr_ics = TTree('jetics', 'jetics')
+otr_cs = TTree('csjet', 'csjet')
+otr_ics = TTree('icsjet', 'icsjet')
 
 jetpt = array('f', [0.])
 jetptcs = array('f', [0.])
@@ -30,17 +40,17 @@ dphi = array('f', [0.])
 
 # sub structure
 depth = array('i', [0])
-z = array('f', 20*[0.])
-delta = array('f', 20*[0.])
-kperp = array('f', 20*[0.])
-m = array('f', 20*[0.])
+z = array('f', 40*[0.])
+delta = array('f', 40*[0.])
+kperp = array('f', 40*[0.])
+m = array('f', 40*[0.])
 
 # matched sub structure
 depthm = array('i', [0])
-zm = array('f', 20*[0.])
-deltam = array('f', 20*[0.])
-kperpm = array('f', 20*[0.])
-mm = array('f', 20*[0.])
+zm = array('f', 40*[0.])
+deltam = array('f', 40*[0.])
+kperpm = array('f', 40*[0.])
+mm = array('f', 40*[0.])
 
 # sub structure matched
 
@@ -131,7 +141,7 @@ while idx<max:
     temp = match(tr, tr_cs, idx, idx_cs)
     if temp>=0:
         idx_cs = temp
-        print('%d/%d'%(idx, idx_cs))
+        # print('%d/%d'%(idx, idx_cs))
 
         tr.GetEntry(idx)
         tr_cs.GetEntry(idx_cs)
@@ -142,7 +152,7 @@ while idx<max:
         scale[0] = jetptcs[0]/jetpt[0]
 
         depth[0] = tr.depth
-        print(tr.depth)
+        # print(tr.depth)
         for i in range(depth[0]):
             z[i] = tr.z[i]
             delta[i] = tr.delta[i]
@@ -162,7 +172,7 @@ while idx<max:
     temp = match(tr, tr_ics, idx, idx_ics)
     if temp>=0:
         idx_ics = temp
-        print('%d/%d'%(idx, idx_ics))
+        # print('%d/%d'%(idx, idx_ics))
 
         tr.GetEntry(idx)
         tr_ics.GetEntry(idx_ics)
