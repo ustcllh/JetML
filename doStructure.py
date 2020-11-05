@@ -162,7 +162,9 @@ def do_cs_jet_by_jet(full_event, ptmin=100.):
         subtracted_jet = subtractor.result(jet)
         corrected_jets.push_back(subtracted_jet)
 
-    return corrected_jets, []
+    # pt cut
+    selector = fj.SelectorPtMin(ptmin)
+    return selector(corrected_jets), []
 
 # jet clustering with cs
 def do_cs_event_wide(full_event, ptmin=100.):
