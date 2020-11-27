@@ -9,7 +9,10 @@ parser = argparse.ArgumentParser(description='JetML CML Parser')
 parser.add_argument('-i','--input', help='Input file name', required=True)
 parser.add_argument('-b','--background',help='Background file name', required=True)
 parser.add_argument('-o','--output',help='Output file name', required=True)
-parser.add_argument('-n',help='number of events', required=True)
+
+parser.add_argument('-s',help='start point of events', required=True)
+parser.add_argument('-e',help='end point of events', required=True)
+# parser.add_argument('-n',help='number of events', required=True)
 
 args = parser.parse_args()
 
@@ -17,7 +20,8 @@ args = parser.parse_args()
 print('Input file: %s' % args.input)
 print('Background file: %s' % args.background)
 print('Output file: %s' % args.output)
-print('Number of events: %s' % args.n)
+print('Events start at: %s' % args.s)
+print('Events end at: %s' % args.e)
 
 
 ########################################
@@ -34,7 +38,7 @@ trcsj = TTree('csjjet', 'cs jet by jet')
 trcse = TTree('csejet', 'cs event wide')
 trics = TTree('icsjet', 'cs iterative')
 
-nevent_max = int(args.n)
+nevent_max = int(args.e) - int(args.s)
 maxn = 100
 
 
@@ -116,13 +120,17 @@ sd = SoftDropGroomer(zcut=0.1, beta=0.)
 print('Soft Drop Groomer: zcut=%.1f, beta=%.1f' % (zcut, beta))
 
 # CS parameters
-max_distance = 0.25
+max_distance = 1
 alpha = 1
-ghost_area = 0.0025
+ghost_area = 0.01
+
+print('Constituent Subtraction [max_distance, alpha, ghost_area]: [%.1f, %.1f, %.2f]' % (max_distance, alpha, ghost_area))
 
 # ICS parameters
-max_distances = [0.2, 0.1]
+max_distances = [0.2, 0.05]
 alphas = [1, 1]
+
+print('Iterative Constituent Subtraction [max_distances, alphas, ghost_area]: [[%.1f, %.1f], [%.1f, %.1f], %.2f]' % (max_distances[0], max_distances[1], alphas[0], alphas[1], ghost_area))
 
 # jet clustering w/o background
 def do_clustering(hard_event, ptmin=100.):
@@ -135,7 +143,7 @@ def do_clustering(hard_event, ptmin=100.):
 def do_cs_jet_by_jet(full_event, ptmin=100.):
     # clustering with ghosts and get the jets
     jet_def = fj.JetDefinition(fj.antikt_algorithm, 0.4)
-    ghost_RapMax = 4.
+    ghost_RapMax = 3.
     ghost_spec = fj.GhostedAreaSpec(ghost_RapMax, 1, ghost_area)
     area_def = fj.AreaDefinition(fj.active_area_explicit_ghosts, ghost_spec)
     clust_seq_full = fj.ClusterSequenceArea(full_event, jet_def, area_def)
@@ -145,14 +153,14 @@ def do_cs_jet_by_jet(full_event, ptmin=100.):
     jet_def_rho= fj.JetDefinition(fj.kt_algorithm, 0.4)
     area_def_rho = fj.AreaDefinition(fj.active_area_explicit_ghosts, ghost_spec)
 
-    rho_range = fj.SelectorAbsRapMax(4.0)
+    rho_range = fj.SelectorAbsRapMax(3.0)
     bge_rho = fj.JetMedianBackgroundEstimator(rho_range, jet_def_rho, area_def_rho)
     bge_rho.set_particles(full_event)
 
     # subtractor
     subtractor = cs.ConstituentSubtractor()
     subtractor.set_distance_type(0)
-    subtractor.set_max_eta(4.0)
+    subtractor.set_max_eta(3.0)
     subtractor.set_background_estimator(bge_rho)
 
 
@@ -168,7 +176,7 @@ def do_cs_jet_by_jet(full_event, ptmin=100.):
 
 # jet clustering with cs
 def do_cs_event_wide(full_event, ptmin=100.):
-    max_eta = 4.
+    max_eta = 3.
 
     # background estimator
     bge_rho = fj.GridMedianBackgroundEstimator(max_eta, 0.5)
@@ -184,13 +192,12 @@ def do_cs_event_wide(full_event, ptmin=100.):
     subtractor.set_ghost_area(ghost_area)
     subtractor.set_max_eta(max_eta)
     subtractor.set_background_estimator(bge_rho)
-    sel_max_pt = fj.SelectorPtMax(15)
-    subtractor.set_particle_selector(sel_max_pt)
+    # sel_max_pt = fj.SelectorPtMax(15)
+    # subtractor.set_particle_selector(sel_max_pt)
     subtractor.initialize()
 
     bge_rho.set_particles(full_event)
 
-    # clustering
     corrected_event = subtractor.subtract_event(full_event)
     jet_def = fj.JetDefinition(fj.antikt_algorithm, 0.4)
     clust_seq_corr = fj.ClusterSequence(corrected_event, jet_def)
@@ -200,9 +207,9 @@ def do_cs_event_wide(full_event, ptmin=100.):
 
 # jet clustering with ics
 def do_cs_iterative(full_event, ptmin=100.):
-    max_eta = 4.
+    max_eta = 3.
 
-    bge_rho = fj.GridMedianBackgroundEstimator(4., 0.5)
+    bge_rho = fj.GridMedianBackgroundEstimator(3., 0.5)
     subtractor = ics.IterativeConstituentSubtractor()
     subtractor.set_distance_type(0)
 
@@ -220,10 +227,10 @@ def do_cs_iterative(full_event, ptmin=100.):
     subtractor.set_max_eta(max_eta);
     subtractor.set_background_estimator(bge_rho)
 
-    sel_max_pt = fj.SelectorPtMax(15)
+    # sel_max_pt = fj.SelectorPtMax(15)
     # only particles with pt<15 will be corrected - the other particles will be copied without any changes.
 
-    subtractor.set_particle_selector(sel_max_pt)
+    # subtractor.set_particle_selector(sel_max_pt)
     subtractor.initialize()
 
     bge_rho.set_particles(full_event)
@@ -269,9 +276,18 @@ def mix_event(dict, dict_bkg):
 
 
 nevent = 0
-while dict['0'] and dict_bkg['1'] and nevent<nevent_max:
-    event[0] = nevent
+while dict['0'] and dict_bkg['1']:
 
+    # loop from args.s to args.e
+    if nevent<int(args.s):
+        dict, des = rd.next_event()
+        dict_bkg, des_dkg = rd_bkg.next_event()
+        nevent+=1
+        continue
+    if nevent>=int(args.e):
+        break
+
+    event[0] = nevent
     hard_event, full_event = mix_event(dict, dict_bkg)
 
     # cuts
@@ -435,8 +451,8 @@ while dict['0'] and dict_bkg['1'] and nevent<nevent_max:
     dict, des = rd.next_event()
     dict_bkg, des_dkg = rd_bkg.next_event()
     nevent += 1
-    if nevent % 1000 == 0:
-        print('%d events completed!' % nevent)
+    # if nevent % 1000 == 0:
+    print('%d events completed!' % nevent)
 
 output.Write()
 output.Close()
