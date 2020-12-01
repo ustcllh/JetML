@@ -12,6 +12,8 @@ parser.add_argument('-o','--output',help='Output file name', required=True)
 
 parser.add_argument('-s',help='start point of events', required=True)
 parser.add_argument('-e',help='end point of events', required=True)
+
+parser.add_argument('-g',help='do ghost subtraction', required=False, default=False)
 # parser.add_argument('-n',help='number of events', required=True)
 
 args = parser.parse_args()
@@ -22,6 +24,7 @@ print('Background file: %s' % args.background)
 print('Output file: %s' % args.output)
 print('Events start at: %s' % args.s)
 print('Events end at: %s' % args.e)
+print('Do ghost subtraction: %s' % args.g)
 
 
 ########################################
@@ -41,7 +44,6 @@ trics = TTree('icsjet', 'cs iterative')
 nevent_max = int(args.e) - int(args.s)
 maxn = 100
 
-
 # event variables
 x = array('f', [0.])
 y = array('f', [0.])
@@ -54,6 +56,12 @@ phi = array('f', [0.])
 jetpt = array('f', [0.])
 depth = array('i', [0])
 jetm = array('f', [0.])
+
+# constituents
+cn = array('i', [0])
+cpt = array('f', 500 * [0.])
+cdeta = array('f', 500 * [0.])
+cdphi = array('f', 500 * [0.])
 
 # groomed jet variables
 jetmg = array('f', [0.])
@@ -78,6 +86,12 @@ def set_branches(tr):
     tr.Branch('jetpt', jetpt, 'jetpt/F')
     tr.Branch('depth', depth, 'depth/I')
     tr.Branch('jetm', jetm, 'jetm/F')
+
+    # constituents
+    tr.Branch('cn', cn, 'cn/I')
+    tr.Branch('cpt', cpt, 'cpt[cn]/F')
+    tr.Branch('cdeta', cdeta, 'cdeta[cn]/F')
+    tr.Branch('cdphi', cdphi, 'cdphi[cn]/F')
 
     # groomed jet variables
     tr.Branch('depthg', depthg, 'depthg/I')
@@ -274,6 +288,18 @@ def mix_event(dict, dict_bkg):
 
     return hard_event, full_event
 
+def delta_phi(phi1, phi2):
+    pi = 3.1415926
+    dphi = phi1 - phi2
+    if dphi > pi:
+        dphi -= 2*pi
+    if dphi < -pi:
+        dphi += 2*pi
+    return dphi
+
+def delta_eta(eta1, eta2):
+    deta = eta1 - eta2
+    return deta
 
 nevent = 0
 while dict['0'] and dict_bkg['1']:
@@ -289,6 +315,11 @@ while dict['0'] and dict_bkg['1']:
 
     event[0] = nevent
     hard_event, full_event = mix_event(dict, dict_bkg)
+    ghosts = PseudoJetVec()
+
+    for ghost in dict['-1']:
+        ghosts.push_back(ghost)
+    gs = GhostSubtractor(ghosts)
 
     # cuts
     ptmin = 130
@@ -301,16 +332,33 @@ while dict['0'] and dict_bkg['1']:
         if abs(jet.eta())>jet_eta_cut:
             continue
         constituents = [i for i in jet.constituents()]
+
+        cn[0] = len(constituents)
+        for i in range(cn[0]):
+            cdeta[i] = delta_eta(constituents[i].eta(), jet.eta())
+            cdphi[i] = delta_phi(constituents[i].phi(), jet.phi())
+            cpt[i] = constituents[i].pt()
+
         rjets = jr(constituents)
         rjet = rjets[0]
 
         x[0] = 0
         y[0] = 0
-        weight[0] = 1
+
+        try:
+            weight[0] = float(des['weight'])
+        except:
+            weight[0] = 1
+
         depth[0] = 0
         depthg[0] = 0
 
-        jtr = JetTree(rjet)
+        jtr = None
+        if args.g == 'False':
+            jtr = JetTree(rjet)
+        else:
+            jtr = JetTree(rjet, gs=gs)
+
         eta[0] = jtr.pseudojet().eta()
         phi[0] = jtr.pseudojet().phi()
         jetpt[0] = jtr.pseudojet().pt()
@@ -340,16 +388,33 @@ while dict['0'] and dict_bkg['1']:
         if abs(jet.eta())>3:
             continue
         constituents = [i for i in jet.constituents()]
+
+        cn[0] = len(constituents)
+        for i in range(cn[0]):
+            cdeta[i] = delta_eta(constituents[i].eta(), jet.eta())
+            cdphi[i] = delta_phi(constituents[i].phi(), jet.phi())
+            cpt[i] = constituents[i].pt()
+
         rjets = jr(constituents)
         rjet = rjets[0]
 
         x[0] = 0
         y[0] = 0
-        weight[0] = 1
+
+        try:
+            weight[0] = float(des['weight'])
+        except:
+            weight[0] = 1
+
         depth[0] = 0
         depthg[0] = 0
 
-        jtr = JetTree(rjet)
+        jtr = None
+        if args.g == 'False':
+            jtr = JetTree(rjet)
+        else:
+            jtr = JetTree(rjet, gs=gs)
+
         eta[0] = jtr.pseudojet().eta()
         phi[0] = jtr.pseudojet().phi()
         jetpt[0] = jtr.pseudojet().pt()
@@ -378,16 +443,33 @@ while dict['0'] and dict_bkg['1']:
         if abs(jet.eta())>3:
             continue
         constituents = [i for i in jet.constituents()]
+
+        cn[0] = len(constituents)
+        for i in range(cn[0]):
+            cdeta[i] = delta_eta(constituents[i].eta(), jet.eta())
+            cdphi[i] = delta_phi(constituents[i].phi(), jet.phi())
+            cpt[i] = constituents[i].pt()
+
         rjets = jr(constituents)
         rjet = rjets[0]
 
         x[0] = 0
         y[0] = 0
-        weight[0] = 1
+
+        try:
+            weight[0] = float(des['weight'])
+        except:
+            weight[0] = 1
+
         depth[0] = 0
         depthg[0] = 0
 
-        jtr = JetTree(rjet)
+        jtr = None
+        if args.g == 'False':
+            jtr = JetTree(rjet)
+        else:
+            jtr = JetTree(rjet, gs=gs)
+
         eta[0] = jtr.pseudojet().eta()
         phi[0] = jtr.pseudojet().phi()
         jetpt[0] = jtr.pseudojet().pt()
@@ -416,16 +498,33 @@ while dict['0'] and dict_bkg['1']:
         if abs(jet.eta())>3:
             continue
         constituents = [i for i in jet.constituents()]
+
+        cn[0] = len(constituents)
+        for i in range(cn[0]):
+            cdeta[i] = delta_eta(constituents[i].eta(), jet.eta())
+            cdphi[i] = delta_phi(constituents[i].phi(), jet.phi())
+            cpt[i] = constituents[i].pt()
+
         rjets = jr(constituents)
         rjet = rjets[0]
 
         x[0] = 0
         y[0] = 0
-        weight[0] = 1
+
+        try:
+            weight[0] = float(des['weight'])
+        except:
+            weight[0] = 1
+
         depth[0] = 0
         depthg[0] = 0
 
-        jtr = JetTree(rjet)
+        jtr = None
+        if args.g == 'False':
+            jtr = JetTree(rjet)
+        else:
+            jtr = JetTree(rjet, gs=gs)
+
         eta[0] = jtr.pseudojet().eta()
         phi[0] = jtr.pseudojet().phi()
         jetpt[0] = jtr.pseudojet().pt()
@@ -451,8 +550,8 @@ while dict['0'] and dict_bkg['1']:
     dict, des = rd.next_event()
     dict_bkg, des_dkg = rd_bkg.next_event()
     nevent += 1
-    # if nevent % 1000 == 0:
-    print('%d events completed!' % nevent)
+    if nevent % 100 == 0:
+        print('%d events completed!' % nevent)
 
 output.Write()
 output.Close()
