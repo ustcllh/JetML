@@ -174,6 +174,8 @@ def do_cs_jet_by_jet(full_event, ptmin=100.):
     # subtractor
     subtractor = cs.ConstituentSubtractor()
     subtractor.set_distance_type(0)
+    subtractor.set_max_distance(max_distance)
+    subtractor.set_alpha(alpha)
     subtractor.set_max_eta(3.0)
     subtractor.set_background_estimator(bge_rho)
 
