@@ -7,25 +7,25 @@ import sys, argparse
 
 parser = argparse.ArgumentParser(description='JetML CML Parser')
 parser.add_argument('-i','--input', help='Input file name', required=True)
-parser.add_argument('-b','--background',help='Background file name', required=True)
+parser.add_argument('-b','--background',help='Background file name', required=False)
 parser.add_argument('-o','--output',help='Output file name', required=True)
+parser.add_argument('-n',help='number of events', required=False)
 
-parser.add_argument('-s',help='start point of events', required=True)
-parser.add_argument('-e',help='end point of events', required=True)
-
-parser.add_argument('-g',help='do ghost subtraction', required=False, default=False)
-# parser.add_argument('-n',help='number of events', required=True)
+parser.add_argument('-g',help='do ghost subtraction', required=False, default=False, action='store_true')
 
 args = parser.parse_args()
 
 # print values
-print('Input file: %s' % args.input)
-print('Background file: %s' % args.background)
-print('Output file: %s' % args.output)
-print('Events start at: %s' % args.s)
-print('Events end at: %s' % args.e)
-print('Do ghost subtraction: %s' % args.g)
-
+print('*********Initialization**********')
+print('Input file:\t%s' % args.input)
+print('Background file:\t%s' % args.background)
+print('Output file: \t%s' % args.output)
+if args.n:
+    print('Number of events:]\t%s' % args.n)
+else:
+    print('Number of events:\tAll')
+print('Do ghost subtraction:\t%r' % args.g)
+print('*********************************')
 
 ########################################
 #              Root Tree
@@ -41,9 +41,8 @@ trcsj = TTree('csjjet', 'cs jet by jet')
 trcse = TTree('csejet', 'cs event wide')
 trics = TTree('icsjet', 'cs iterative')
 
-nevent_max = int(args.e) - int(args.s)
-maxn = 100
 
+maxn = 100
 # event variables
 x = array('f', [0.])
 y = array('f', [0.])
@@ -266,23 +265,28 @@ def do_cs_iterative(full_event, ptmin=100.):
 
 # hard event
 rd = Reader(args.input)
-dict, des = rd.next_event()
+dict_input, des_input = rd.next_event()
 
 # thermal event
-rd_bkg = Reader(args.background)
-dict_bkg, des_dkg = rd_bkg.next_event()
+
+try:
+    rd_bkg = Reader(args.background)
+    dict_bkg, des_bkg = rd_bkg.next_event()
+
+except:
+    print("No background files.")
 
 # jet recluster
 jr = JetFinder(algorithm=fj.cambridge_algorithm, R=999., ptmin=0)
 
 # mix event
-def mix_event(dict, dict_bkg):
+def mix_event(dict_input, dict_bkg):
     hard_event = cs.PseudoJetVec()
     full_event = cs.PseudoJetVec()
 
     hard_event.clear()
     full_event.clear()
-    for p in dict['0']:
+    for p in dict_input['0']:
         hard_event.push_back(p)
         full_event.push_back(p)
     for p in dict_bkg['1']:
@@ -304,22 +308,25 @@ def delta_eta(eta1, eta2):
     return deta
 
 nevent = 0
-while dict['0'] and dict_bkg['1']:
 
-    # loop from args.s to args.e
-    if nevent<int(args.s):
-        dict, des = rd.next_event()
-        dict_bkg, des_dkg = rd_bkg.next_event()
-        nevent+=1
-        continue
-    if nevent>=int(args.e):
+try:
+    nevent_max = int(args.n)
+except:
+    nevent_max = 100
+
+while dict_input['0'] and dict_bkg['1']:
+    if nevent == nevent_max:
         break
 
+    dict_input, des_input = rd.next_event()
+    dict_bkg, des_dkg = rd_bkg.next_event()
+    nevent+=1
+
     event[0] = nevent
-    hard_event, full_event = mix_event(dict, dict_bkg)
+    hard_event, full_event = mix_event(dict_input, dict_bkg)
     ghosts = PseudoJetVec()
 
-    for ghost in dict['-1']:
+    for ghost in dict_input['-1']:
         ghosts.push_back(ghost)
     gs = GhostSubtractor(ghosts)
 
@@ -348,7 +355,7 @@ while dict['0'] and dict_bkg['1']:
         y[0] = 0
 
         try:
-            weight[0] = float(des['weight'])
+            weight[0] = float(des_input['weight'])
         except:
             weight[0] = 1
 
@@ -404,7 +411,7 @@ while dict['0'] and dict_bkg['1']:
         y[0] = 0
 
         try:
-            weight[0] = float(des['weight'])
+            weight[0] = float(des_input['weight'])
         except:
             weight[0] = 1
 
@@ -459,7 +466,7 @@ while dict['0'] and dict_bkg['1']:
         y[0] = 0
 
         try:
-            weight[0] = float(des['weight'])
+            weight[0] = float(des_input['weight'])
         except:
             weight[0] = 1
 
@@ -514,7 +521,7 @@ while dict['0'] and dict_bkg['1']:
         y[0] = 0
 
         try:
-            weight[0] = float(des['weight'])
+            weight[0] = float(des_input['weight'])
         except:
             weight[0] = 1
 
@@ -549,7 +556,7 @@ while dict['0'] and dict_bkg['1']:
             temp = temp.harder()
         trics.Fill()
 
-    dict, des = rd.next_event()
+    dict_input, des_input = rd.next_event()
     dict_bkg, des_dkg = rd_bkg.next_event()
     nevent += 1
     if nevent % 100 == 0:
