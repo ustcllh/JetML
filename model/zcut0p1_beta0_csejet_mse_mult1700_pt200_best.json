@@ -1,0 +1,10 @@
+{
+    "decay_factor": 0.9688799329100599,
+    "hidden_size0": 16.0,
+    "hidden_size1": 4.0,
+    "learning_rate": 0.025028383751502483,
+    "loss_func": "mse",
+    "num_batch": 10000.0,
+    "num_epochs": 50.0,
+    "num_layers": 2.0
+}
