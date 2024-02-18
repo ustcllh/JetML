@@ -12,14 +12,7 @@ git clone https://github.com/ustcllh/JetML.git
 cd JetML
 ```
 
-Note: 
-
-```git lfs``` is used for tracking files in ```data/Classified``` folder.
-
-Link: [Git LFS](https://git-lfs.github.com)
-
 Full dataset is available from [google drive](https://drive.google.com/drive/folders/12hxxRplZKlBS7Ds_kRvIXiyRumq2MsgZ?usp=sharing).
-
 
 
 ### 2. Virtual Machine
